@@ -1,4 +1,4 @@
-export type CheckType = 'http' | 'tcp'
+export type CheckType = 'http' | 'tcp' | 'ping'
 
 export interface CheckRequest {
   type: CheckType

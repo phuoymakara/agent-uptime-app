@@ -22,8 +22,8 @@ app.post('/check', auth, async (c) => {
     return c.json({ error: 'Missing required fields: type, url' }, 400)
   }
 
-  if (body.type !== 'http' && body.type !== 'tcp') {
-    return c.json({ error: 'Invalid type, must be http or tcp' }, 400)
+  if (!['http', 'tcp', 'ping'].includes(body.type)) {
+    return c.json({ error: 'Invalid type, must be http, tcp, or ping' }, 400)
   }
 
   const result = await performCheck(body)

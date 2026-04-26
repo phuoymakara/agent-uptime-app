@@ -1,8 +1,11 @@
 import { createConnection } from 'net'
+// import ping from 'ping'
 import type { CheckRequest, CheckResult } from './types'
 
 export async function performCheck({ type, url, timeout = 10000 }: CheckRequest): Promise<CheckResult> {
-  return type === 'tcp' ? checkTcp(url, timeout) : checkHttp(url, timeout)
+  if (type === 'tcp') return checkTcp(url, timeout)
+  // if (type === 'ping') return checkPing(url, timeout)
+  return checkHttp(url, timeout)
 }
 
 async function checkHttp(url: string, timeout: number): Promise<CheckResult> {
