@@ -1,0 +1,21 @@
+# VPS deployment — plain HTTP (put your own reverse proxy in front)
+# Usage: docker compose -f deploy/docker-compose.yml --env-file .env up -d
+
+services:
+  agent:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - AGENT_TOKENS=${AGENT_TOKENS}
+      - AGENT_REGION=${AGENT_REGION:-unknown}
+      - PORT=3001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

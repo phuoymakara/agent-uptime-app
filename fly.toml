@@ -1,0 +1,33 @@
+# DEFAULT deployment target: Fly.io
+# 1. Rename app to your unique Fly.io app name
+# 2. Run: fly launch --no-deploy (first time) then fly deploy
+# 3. Clone to other regions: fly machine clone --region nrt
+#
+# Available regions: sin (SG), nrt (JP), hkg (HK), syd (AU),
+#                    cdg (FR), ams (NL), lhr (UK),
+#                    iad (US-East), lax (US-West)
+
+app = "uptime-agent-changeme"
+primary_region = "sin"
+
+[build]
+
+[env]
+  PORT = "3001"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 100
+    soft_limit = 80
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

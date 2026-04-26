@@ -1,0 +1,4 @@
+# Replace with your actual domain pointing to this VPS
+agent.yourdomain.com {
+    reverse_proxy agent:3001
+}
