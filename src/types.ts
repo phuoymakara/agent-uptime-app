@@ -12,3 +12,10 @@ export interface CheckResult {
   statusCode?: number
   message: string
 }
+
+export type Env = {
+  Bindings: {
+    AGENT_TOKENS: string
+    AGENT_REGION: string
+  }
+}

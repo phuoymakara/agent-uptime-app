@@ -1,10 +1,8 @@
-import { createConnection } from 'net'
-// import ping from 'ping'
+import { connect } from 'cloudflare:sockets'
 import type { CheckRequest, CheckResult } from './types'
 
 export async function performCheck({ type, url, timeout = 10000 }: CheckRequest): Promise<CheckResult> {
   if (type === 'tcp') return checkTcp(url, timeout)
-  // if (type === 'ping') return checkPing(url, timeout)
   return checkHttp(url, timeout)
 }
 
@@ -38,23 +36,17 @@ async function checkTcp(address: string, timeout: number): Promise<CheckResult> 
   const port = parseInt(cleaned.slice(lastColon + 1), 10)
   const start = Date.now()
 
-  return new Promise(resolve => {
-    const socket = createConnection({ host, port })
-    socket.setTimeout(timeout)
-
-    socket.once('connect', () => {
-      socket.destroy()
-      resolve({ status: 'up', responseTime: Date.now() - start, message: 'Connection successful' })
-    })
-
-    socket.once('error', (err) => {
-      socket.destroy()
-      resolve({ status: 'down', responseTime: Date.now() - start, message: err.message })
-    })
-
-    socket.once('timeout', () => {
-      socket.destroy()
-      resolve({ status: 'down', responseTime: Date.now() - start, message: 'Connection timed out' })
-    })
-  })
+  try {
+    const socket = connect({ hostname: host, port })
+    await Promise.race([
+      socket.opened,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timed out')), timeout)
+      ),
+    ])
+    await socket.close()
+    return { status: 'up', responseTime: Date.now() - start, message: 'Connection successful' }
+  } catch (err: any) {
+    return { status: 'down', responseTime: Date.now() - start, message: err?.message ?? 'Connection failed' }
+  }
 }

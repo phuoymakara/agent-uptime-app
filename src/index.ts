@@ -1,20 +1,19 @@
-import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { auth } from './auth'
 import { performCheck } from './checker'
-import { log } from './logger'
-import type { CheckRequest } from './types'
+import { createLogger } from './logger'
+import type { CheckRequest, Env } from './types'
 
-const app = new Hono()
-const region = process.env.AGENT_REGION ?? 'unknown'
-const port = parseInt(process.env.PORT ?? '3001', 10)
+const app = new Hono<Env>()
 
 app.get('/health', (c) => {
-  log.info('health check')
+  const region = c.env.AGENT_REGION ?? 'unknown'
   return c.json({ ok: true, region, version: '1.0.0' })
 })
 
 app.post('/check', auth, async (c) => {
+  const log = createLogger(c.env.AGENT_REGION ?? 'unknown')
+
   let body: CheckRequest
   try {
     body = await c.req.json<CheckRequest>()
@@ -34,14 +33,10 @@ app.post('/check', auth, async (c) => {
   }
 
   log.request(body.type, body.url, body.timeout ?? 10000)
-
   const result = await performCheck(body)
-
   log.result(body.type, body.url, result)
 
   return c.json(result)
 })
 
-serve({ fetch: app.fetch, port }, () => {
-  log.boot(port)
-})
+export default app
