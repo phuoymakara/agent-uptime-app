@@ -1,4 +1,4 @@
-name = "uptime-agent"
+name = "uptime-agent-sin"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 
@@ -6,7 +6,32 @@ compatibility_date = "2025-04-01"
 # mode = "smart"   # uncomment to enable Cloudflare Smart Placement
 
 [vars]
-AGENT_REGION = "sin"   # override per deployment (sin, nrt, hkg, cdg, iad, …)
+AGENT_REGION = "sin"
 
 # Store tokens as a secret — never in [vars]:
 #   wrangler secret put AGENT_TOKENS
+
+[env.nrt]
+name = "uptime-agent-nrt"
+[env.nrt.vars]
+AGENT_REGION = "nrt"
+
+[env.hkg]
+name = "uptime-agent-hkg"
+[env.hkg.vars]
+AGENT_REGION = "hkg"
+
+[env.syd]
+name = "uptime-agent-syd"
+[env.syd.vars]
+AGENT_REGION = "syd"
+
+[env.cdg]
+name = "uptime-agent-cdg"
+[env.cdg.vars]
+AGENT_REGION = "cdg"
+
+[env.iad]
+name = "uptime-agent-iad"
+[env.iad.vars]
+AGENT_REGION = "iad"

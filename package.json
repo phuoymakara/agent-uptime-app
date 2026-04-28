@@ -5,6 +5,11 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:nrt": "wrangler deploy --env nrt",
+    "deploy:hkg": "wrangler deploy --env hkg",
+    "deploy:syd": "wrangler deploy --env syd",
+    "deploy:cdg": "wrangler deploy --env cdg",
+    "deploy:iad": "wrangler deploy --env iad",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit"
   },
