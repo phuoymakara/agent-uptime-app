@@ -2,8 +2,9 @@ name = "uptime-agent-sin"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 
-# [placement]
-# mode = "smart"   # uncomment to enable Cloudflare Smart Placement
+[placement]
+mode = "off"
+region = "gcp:asia-southeast1"   # Singapore
 
 [vars]
 AGENT_REGION = "sin"
@@ -13,25 +14,40 @@ AGENT_REGION = "sin"
 
 [env.nrt]
 name = "uptime-agent-nrt"
+[env.nrt.placement]
+mode = "off"
+region = "gcp:asia-northeast1"   # Tokyo
 [env.nrt.vars]
 AGENT_REGION = "nrt"
 
 [env.hkg]
 name = "uptime-agent-hkg"
+[env.hkg.placement]
+mode = "off"
+region = "gcp:asia-east2"        # Hong Kong
 [env.hkg.vars]
 AGENT_REGION = "hkg"
 
 [env.syd]
 name = "uptime-agent-syd"
+[env.syd.placement]
+mode = "off"
+region = "gcp:australia-southeast1"  # Sydney
 [env.syd.vars]
 AGENT_REGION = "syd"
 
 [env.cdg]
 name = "uptime-agent-cdg"
+[env.cdg.placement]
+mode = "off"
+region = "gcp:europe-west9"      # Paris
 [env.cdg.vars]
 AGENT_REGION = "cdg"
 
 [env.iad]
 name = "uptime-agent-iad"
+[env.iad.placement]
+mode = "off"
+region = "gcp:us-east4"          # Virginia, US East
 [env.iad.vars]
 AGENT_REGION = "iad"
