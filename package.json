@@ -10,6 +10,7 @@
     "deploy:syd": "wrangler deploy --env syd",
     "deploy:cdg": "wrangler deploy --env cdg",
     "deploy:iad": "wrangler deploy --env iad",
+    "deploy:fra": "wrangler deploy --env fra",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit"
   },

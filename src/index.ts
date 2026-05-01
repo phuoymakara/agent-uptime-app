@@ -32,6 +32,8 @@ app.post('/check', auth, async (c) => {
     return c.json({ error: 'Invalid type, must be http, tcp, or ping' }, 400)
   }
 
+  const colo = c.req.raw.cf?.colo ?? 'unknown'
+  log.info(`handling request from CF datacenter: ${colo}`)
   log.request(body.type, body.url, body.timeout ?? 10000)
   const result = await performCheck(body)
   log.result(body.type, body.url, result)
