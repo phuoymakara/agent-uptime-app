@@ -1,0 +1,33 @@
+name: Deploy → Appwrite (Frankfurt)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/appwrite/**'
+
+jobs:
+  deploy:
+    name: Deploy Appwrite Function
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '21'
+
+      - name: Install Appwrite CLI
+        run: npm install -g appwrite-cli
+
+      - name: Configure Appwrite client
+        run: |
+          appwrite client \
+            --endpoint https://cloud.appwrite.io/v1 \
+            --projectId ${{ secrets.APPWRITE_PROJECT_ID }} \
+            --key ${{ secrets.APPWRITE_API_KEY }}
+
+      - name: Deploy function
+        working-directory: deploy/appwrite
+        run: appwrite deploy function --all --yes

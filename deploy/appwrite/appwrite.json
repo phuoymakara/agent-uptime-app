@@ -1,0 +1,20 @@
+{
+  "projectId": "",
+  "projectName": "uptime-agent",
+  "functions": [
+    {
+      "$id": "uptime-agent",
+      "name": "Uptime Agent",
+      "runtime": "node-21.0",
+      "execute": [],
+      "events": [],
+      "schedule": "",
+      "timeout": 15,
+      "enabled": true,
+      "logging": true,
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "path": "functions/uptime-agent"
+    }
+  ]
+}

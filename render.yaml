@@ -1,0 +1,26 @@
+# Render deployment — Australia (Sydney)
+# Docs: https://render.com/docs/infrastructure-as-code
+#
+# First-time setup:
+#   1. Push this repo to GitHub/GitLab
+#   2. Go to render.com → New → Blueprint → connect your repo
+#   3. Set AGENT_TOKENS in the Render dashboard (Environment → Secret Files)
+#   4. Deploy
+
+services:
+  - type: web
+    name: uptime-agent
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: sydney
+    plan: starter
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: AGENT_REGION
+        value: australia-sydney
+      - key: PORT
+        value: "3001"
+      - key: AGENT_TOKENS
+        sync: false   # set this secret in the Render dashboard

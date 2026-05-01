@@ -1,0 +1,26 @@
+# Railway deployment — Asia (Singapore)
+# Docs: https://docs.railway.app/reference/config-as-code
+#
+# First-time setup:
+#   1. Install Railway CLI: npm i -g @railway/cli
+#   2. railway login && railway init
+#   3. Set region to Singapore:
+#        railway service update --region asia-southeast1
+#      or: Dashboard → Service → Settings → Deploy → Region → Singapore
+#   4. Set secrets: railway variables set AGENT_TOKENS=your-token
+#   5. railway up
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[deploy.environmentVariables]
+AGENT_REGION = "asia-singapore"
+PORT = "3001"
+# AGENT_TOKENS — set via: railway variables set AGENT_TOKENS=your-token
