@@ -1,0 +1,69 @@
+# AWS SAM deployment configuration
+# Usage: sam deploy --config-env <env-name>
+# Tokens are never stored here — always passed via CLI or CI secret
+
+version = 0.1
+
+# ── Singapore (ap-southeast-1) — Primary ─────────────────────────────────
+[singapore]
+[singapore.deploy.parameters]
+stack_name        = "uptime-agent-singapore"
+s3_bucket         = ""                      # auto-created on first deploy (sam deploy --guided)
+s3_prefix         = "uptime-agent-singapore"
+capabilities      = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+parameter_overrides = "AgentRegion=\"singapore\" Environment=\"production\""
+resolve_s3 = true
+image_repositories = []
+
+
+[singapore.global.parameters]
+region = "ap-southeast-1"
+[singapore-staging]
+[singapore-staging.deploy.parameters]
+stack_name        = "uptime-agent-singapore-staging"
+region            = "ap-southeast-1"
+s3_prefix         = "uptime-agent"
+capabilities      = "CAPABILITY_IAM"
+confirm_changeset = false
+fail_on_empty_changeset = false
+parameter_overrides = "AgentRegion=singapore Environment=staging"
+
+# ── Sydney (ap-southeast-2) ───────────────────────────────────────────────
+[sydney]
+[sydney.deploy.parameters]
+stack_name        = "uptime-agent-sydney"
+region            = "ap-southeast-2"
+s3_prefix         = "uptime-agent-sydney"
+capabilities      = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+parameter_overrides = "AgentRegion=\"sydney\" Environment=\"production\""
+
+# ── Europe / Frankfurt (eu-central-1) — Planned ──────────────────────────
+# [frankfurt]
+# [frankfurt.deploy.parameters]
+# stack_name        = "uptime-agent-frankfurt"
+# region            = "eu-central-1"
+# s3_prefix         = "uptime-agent"
+# capabilities      = "CAPABILITY_IAM"
+# confirm_changeset = false
+# fail_on_empty_changeset = false
+# parameter_overrides = "AgentRegion=frankfurt Environment=production"
+
+# ── North America / Virginia (us-east-1) — Planned ───────────────────────
+# [virginia]
+# [virginia.deploy.parameters]
+# stack_name        = "uptime-agent-virginia"
+# region            = "us-east-1"
+# s3_prefix         = "uptime-agent"
+# capabilities      = "CAPABILITY_IAM"
+# confirm_changeset = false
+# fail_on_empty_changeset = false
+# parameter_overrides = "AgentRegion=virginia Environment=production"
+resolve_s3 = true
+image_repositories = []
+
+[sydney.global.parameters]
+region = "ap-southeast-2"
