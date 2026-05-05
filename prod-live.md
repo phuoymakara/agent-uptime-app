@@ -40,6 +40,7 @@ Value               https://g0v6ixoz4c.execute-api.ap-southeast-2.amazonaws.com
 Successfully created/updated stack - uptime-agent-sydney in ap-southeast-2
 
 
---------------------------------Delete-------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+##Delete Lambda Function 
 
 winpty "/c/Program Files/Amazon/AWSSAMCLI/bin/sam.cmd" delete --stack-name uptime-agent-singapore --region ap-southeast-1
