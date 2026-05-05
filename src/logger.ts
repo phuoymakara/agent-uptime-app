@@ -23,11 +23,14 @@ export const log = {
     responseTime: number
     statusCode?: number
     message: string
+    attempts: number
+    failures: number
   }) => {
-    const code = result.statusCode ? ` code=${result.statusCode}` : ''
-    const icon = result.status === 'up' ? '✓' : '✗'
+    const code    = result.statusCode ? ` code=${result.statusCode}` : ''
+    const retries = result.attempts > 1 ? ` attempts=${result.attempts} failures=${result.failures}` : ''
+    const icon    = result.status === 'up' ? '✓' : '✗'
     console.log(
-      `${tag('RESULT')} ${icon} type=${type} url=${url} status=${result.status}${code} responseTime=${result.responseTime}ms msg="${result.message}"`
+      `${tag('RESULT')} ${icon} type=${type} url=${url} status=${result.status}${code} responseTime=${result.responseTime}ms${retries} msg="${result.message}"`
     )
   },
 

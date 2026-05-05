@@ -4,3 +4,4 @@ dist/
 *.log
 .aws-sam/
 trust.json
+CLAUDE.md

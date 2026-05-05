@@ -9,8 +9,7 @@ const region = process.env.AGENT_REGION ?? 'unknown'
 const app = new Hono()
 
 app.get('/health', (c) => {
-  log.info('health check')
-  return c.json({ ok: true, region, commit: __COMMIT__, builtAt: __BUILT_AT__ })
+  return c.json({ ok: true, region, commit: __COMMIT__ ?? 'unknown', builtAt: __BUILT_AT__ ?? 'unknown' })
 })
 
 app.post('/check', auth, async (c) => {
@@ -21,6 +20,7 @@ app.post('/check', auth, async (c) => {
     log.error('invalid JSON body from ' + (c.req.header('x-forwarded-for') ?? 'unknown'))
     return c.json({ error: 'Invalid JSON body' }, 400)
   }
+  log.info('received check request', { body })
 
   if (!body.type || !body.url) {
     log.error('missing required fields', { body })
@@ -32,7 +32,7 @@ app.post('/check', auth, async (c) => {
     return c.json({ error: 'Invalid type, must be http, tcp, or ping' }, 400)
   }
 
-  log.request(body.type, body.url, body.timeout ?? 10000)
+  log.request(body.type, body.url, body.timeout ?? 5000)
   const result = await performCheck(body)
   log.result(body.type, body.url, result)
 
