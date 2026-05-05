@@ -266,9 +266,161 @@ Expected — `sam deploy --no-fail-on-empty-changeset` skips gracefully when not
 
 ## Adding a New Region
 
-1. Uncomment the region block in `samconfig.toml`
-2. Copy a deploy job in `.github/workflows/deploy.yml`, update `aws-region` and `--config-env`
-3. Add the region name to the `workflow_dispatch` input choices
-4. Run the workflow manually targeting the new region for the first deploy
+> No code changes required. The same Lambda bundle deploys to any AWS region.  
+> Only 3 files need updating — all by copy-paste.
 
-No code changes needed — the same Lambda bundle deploys to any AWS region.
+**The only values that change per region:**
+
+| What | Example (Frankfurt) |
+|------|-------------------|
+| AWS region code | `eu-central-1` |
+| Config env name | `frankfurt` |
+| Stack name | `uptime-agent-frankfurt` |
+| Display name | `Frankfurt` |
+
+---
+
+### Step 1 — `samconfig.toml`
+
+Add a new block at the bottom of the file. Use an existing region block as a template and change the three values above:
+
+```toml
+[frankfurt]
+[frankfurt.deploy.parameters]
+stack_name              = "uptime-agent-frankfurt"
+capabilities            = "CAPABILITY_IAM"
+confirm_changeset       = false
+fail_on_empty_changeset = false
+parameter_overrides     = "AgentRegion=\"frankfurt\" Environment=\"production\""
+resolve_s3              = true
+image_repositories      = []
+
+[frankfurt.global.parameters]
+region = "eu-central-1"
+```
+
+> Frankfurt and Virginia blocks are already in `samconfig.toml` as comments — just uncomment them.
+
+---
+
+### Step 2 — `.github/workflows/deploy.yml` — add a deploy job
+
+Copy any existing deploy job (e.g. `deploy-sydney`) and change the 4 highlighted values:
+
+```yaml
+deploy-frankfurt:                                          # ← 1. job name
+  name: Deploy → Frankfurt                                # ← 2. display name
+  needs: build
+  runs-on: ubuntu-latest
+  if: |
+    github.ref == 'refs/heads/main' &&
+    (github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'frankfurt')
+  environment:
+    name: frankfurt                                        # ← 3. GitHub Environment name
+    url: ${{ steps.endpoint.outputs.url }}
+  permissions:
+    id-token: write
+    contents: read
+
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Download dist artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: lambda-dist
+        path: dist/
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+        aws-region: eu-central-1                           # ← 4. AWS region code
+
+    - uses: aws-actions/setup-sam@v2
+      with:
+        use-installer: true
+
+    - name: Deploy to Frankfurt
+      run: |
+        sam deploy \
+          --config-env frankfurt \
+          --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset
+
+    - name: Get endpoint URL
+      id: endpoint
+      run: |
+        URL=$(aws cloudformation describe-stacks \
+          --stack-name uptime-agent-frankfurt \
+          --region eu-central-1 \
+          --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+          --output text)
+        echo "url=$URL" >> $GITHUB_OUTPUT
+
+    - name: Smoke test
+      run: |
+        curl -sf "${{ steps.endpoint.outputs.url }}/health" | jq .
+```
+
+---
+
+### Step 3 — `.github/workflows/deploy.yml` — update `notify` job
+
+Add the new job to the `needs` list so the summary includes it:
+
+```yaml
+notify:
+  name: Deployment summary
+  needs: [deploy-singapore, deploy-sydney, deploy-frankfurt]   # ← add here
+  runs-on: ubuntu-latest
+  if: always()
+  steps:
+    - name: Report
+      run: |
+        SG="${{ needs.deploy-singapore.result }}"
+        AU="${{ needs.deploy-sydney.result }}"
+        DE="${{ needs.deploy-frankfurt.result }}"             # ← add
+        echo "Singapore: $SG"
+        echo "Sydney:    $AU"
+        echo "Frankfurt: $DE"                                 # ← add
+        if [[ "$SG" == "failure" || "$AU" == "failure" || "$DE" == "failure" ]]; then
+          echo "One or more regions failed — review the logs above."
+          exit 1
+        fi
+```
+
+---
+
+### Step 4 — `.github/workflows/deploy.yml` — update `workflow_dispatch` choices
+
+Add the new region to the manual trigger dropdown:
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Region to deploy
+        type: choice
+        options: [all, singapore, sydney, frankfurt]     # ← add here
+```
+
+---
+
+### Step 5 — Create the GitHub Environment
+
+In your GitHub repository:  
+**Settings → Environments → New environment** → name it `frankfurt`
+
+---
+
+### Checklist summary
+
+- [ ] Block added to `samconfig.toml`
+- [ ] Deploy job added to `deploy.yml`
+- [ ] `notify` job `needs` list updated
+- [ ] `workflow_dispatch` options updated
+- [ ] GitHub Environment created
+- [ ] Commit and push to `main` — the new region deploys automatically
