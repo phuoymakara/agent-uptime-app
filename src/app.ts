@@ -9,7 +9,6 @@ const region = process.env.AGENT_REGION ?? 'unknown'
 const app = new Hono()
 
 app.get('/health', (c) => {
-  log.info('health check')
   return c.json({ ok: true, region, commit: __COMMIT__, builtAt: __BUILT_AT__ })
 })
 
@@ -32,7 +31,7 @@ app.post('/check', auth, async (c) => {
     return c.json({ error: 'Invalid type, must be http, tcp, or ping' }, 400)
   }
 
-  log.request(body.type, body.url, body.timeout ?? 10000)
+  log.request(body.type, body.url, body.timeout ?? 5000)
   const result = await performCheck(body)
   log.result(body.type, body.url, result)
 
