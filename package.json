@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "rm -rf dist && tsc",
+    "build:lambda": "node scripts/build-lambda.mjs",
     "start": "node dist/index.js"
   },
   "dependencies": {
@@ -13,6 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "esbuild": "^0.24.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

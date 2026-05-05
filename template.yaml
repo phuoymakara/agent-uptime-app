@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Uptime Agent — Serverless regional monitoring agent (Hono on Lambda)
+
+Parameters:
+  AgentRegion:
+    Type: String
+    Description: Human-readable region label (e.g. singapore, sydney)
+  AgentTokens:
+    Type: String
+    NoEcho: true
+    Description: Comma-separated bearer tokens for /check authentication
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [production, staging]
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]   # Graviton2 — cheaper + faster for Node.js
+    MemorySize: 256
+    Timeout: 30
+    Environment:
+      Variables:
+        AGENT_REGION: !Ref AgentRegion
+        AGENT_TOKENS: !Ref AgentTokens
+        NODE_ENV: !Ref Environment
+
+Resources:
+
+  # ── API Gateway (HTTP API) ────────────────────────────────────────────────
+  UptimeAgentApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Description: !Sub "Uptime Agent API — ${AgentRegion}"
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: [Authorization, Content-Type]
+        AllowMethods: [GET, POST]
+      Tags:
+        Project: uptime-agent
+        Region: !Ref AgentRegion
+        Environment: !Ref Environment
+
+  # ── Lambda Function ───────────────────────────────────────────────────────
+  UptimeAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "uptime-agent-${AgentRegion}-${Environment}"
+      Description: !Sub "Uptime monitoring agent running in ${AgentRegion}"
+      CodeUri: dist/
+      Handler: lambda.handler
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref UptimeAgentApi
+            Path: /{proxy+}
+            Method: ANY
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref UptimeAgentApi
+            Path: /
+            Method: ANY
+      Tags:
+        Project: uptime-agent
+        Region: !Ref AgentRegion
+        Environment: !Ref Environment
+
+  # ── CloudWatch Alarm — error rate ────────────────────────────────────────
+  ErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "uptime-agent-${AgentRegion}-errors"
+      AlarmDescription: Lambda error rate > 5% over 5 minutes
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref UptimeAgentFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ── CloudWatch Alarm — P95 latency ───────────────────────────────────────
+  LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "uptime-agent-${AgentRegion}-latency-p95"
+      AlarmDescription: P95 Lambda duration > 10 seconds
+      Namespace: AWS/Lambda
+      MetricName: Duration
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref UptimeAgentFunction
+      ExtendedStatistic: p95
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint (use this for Route 53 CNAME)
+    Value: !Sub "https://${UptimeAgentApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Export:
+      Name: !Sub "uptime-agent-${AgentRegion}-endpoint"
+
+  FunctionName:
+    Description: Lambda function name
+    Value: !Ref UptimeAgentFunction
+
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt UptimeAgentFunction.Arn

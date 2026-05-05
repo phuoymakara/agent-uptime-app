@@ -1,0 +1,181 @@
+name: Deploy Uptime Agent
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Region to deploy
+        required: false
+        default: all
+        type: choice
+        options: [all, singapore, sydney]
+      environment:
+        description: Target environment
+        required: false
+        default: production
+        type: choice
+        options: [production, staging]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false   # never cancel an in-flight deploy
+
+jobs:
+  # ── Build (shared across all regions) ──────────────────────────────────
+  build:
+    name: Build Lambda bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Bundle for Lambda
+        run: yarn build:lambda
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-dist
+          path: dist/
+          retention-days: 1
+
+  # ── Deploy — Singapore (ap-southeast-1) ────────────────────────────────
+  deploy-singapore:
+    name: Deploy → Singapore
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'singapore')
+    environment:
+      name: singapore
+      url: ${{ steps.endpoint.outputs.url }}
+    permissions:
+      id-token: write   # required for OIDC token request
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-dist
+          path: dist/
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-southeast-1
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Deploy to Singapore
+        run: |
+          sam deploy \
+            --config-env singapore \
+            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
+
+      - name: Get endpoint URL
+        id: endpoint
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name uptime-agent-singapore \
+            --region ap-southeast-1 \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+            --output text)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Smoke test
+        run: |
+          echo "Testing ${{ steps.endpoint.outputs.url }}/health"
+          curl -sf "${{ steps.endpoint.outputs.url }}/health" | jq .
+
+  # ── Deploy — Sydney (ap-southeast-2) ───────────────────────────────────
+  deploy-sydney:
+    name: Deploy → Sydney
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'sydney')
+    environment:
+      name: sydney
+      url: ${{ steps.endpoint.outputs.url }}
+    permissions:
+      id-token: write   # required for OIDC token request
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-dist
+          path: dist/
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-southeast-2
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Deploy to Sydney
+        run: |
+          sam deploy \
+            --config-env sydney \
+            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
+
+      - name: Get endpoint URL
+        id: endpoint
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name uptime-agent-sydney \
+            --region ap-southeast-2 \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+            --output text)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Smoke test
+        run: |
+          echo "Testing ${{ steps.endpoint.outputs.url }}/health"
+          curl -sf "${{ steps.endpoint.outputs.url }}/health" | jq .
+
+  # ── Notify ─────────────────────────────────────────────────────────────
+  notify:
+    name: Deployment summary
+    needs: [deploy-singapore, deploy-sydney]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report
+        run: |
+          SG="${{ needs.deploy-singapore.result }}"
+          AU="${{ needs.deploy-sydney.result }}"
+          echo "Singapore: $SG"
+          echo "Sydney:    $AU"
+          if [[ "$SG" == "failure" || "$AU" == "failure" ]]; then
+            echo "One or more regions failed — review the logs above."
+            exit 1
+          fi
