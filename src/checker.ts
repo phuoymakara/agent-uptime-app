@@ -3,7 +3,7 @@ import { exec } from 'child_process'
 import type { CheckAssert, CheckRequest, CheckResult, AttemptDetail } from './types'
 
 const DEFAULT_TIMEOUT     = 5000
-const DEFAULT_RETRIES     = 2
+const DEFAULT_RETRIES     = 1; // 2: initial attempt + 2 retries = 3 total attempts, which is a common pattern in monitoring tools
 const DEFAULT_RETRY_DELAY = 150
 const MAX_RETRIES         = 5
 // Total budget per check: (attempts × timeout) + (delays) must stay under this.
