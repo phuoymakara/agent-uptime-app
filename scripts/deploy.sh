@@ -3,6 +3,7 @@
 # Usage:
 #   ./scripts/deploy.sh singapore
 #   ./scripts/deploy.sh sydney
+#   ./scripts/deploy.sh frankfurt
 #   ./scripts/deploy.sh all
 #
 # Prerequisites: aws CLI, sam CLI, yarn, AGENT_TOKENS env var set
@@ -68,13 +69,17 @@ case "$TARGET" in
   sydney)
     deploy_region sydney "Sydney" ap-southeast-2
     ;;
+  frankfurt)
+    deploy_region frankfurt "Frankfurt" eu-central-1
+    ;;
   all)
     deploy_region singapore "Singapore" ap-southeast-1
     deploy_region sydney    "Sydney"    ap-southeast-2
+    deploy_region frankfurt "Frankfurt" eu-central-1
     ;;
   *)
     echo "Unknown target: $TARGET"
-    echo "Usage: $0 [singapore|sydney|all]"
+    echo "Usage: $0 [singapore|sydney|frankfurt|all]"
     exit 1
     ;;
 esac

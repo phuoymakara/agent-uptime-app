@@ -41,17 +41,6 @@ confirm_changeset = true
 fail_on_empty_changeset = false
 parameter_overrides = "AgentRegion=\"sydney\" Environment=\"production\""
 
-# ── Europe / Frankfurt (eu-central-1) — Planned ──────────────────────────
-# [frankfurt]
-# [frankfurt.deploy.parameters]
-# stack_name        = "uptime-agent-frankfurt"
-# region            = "eu-central-1"
-# s3_prefix         = "uptime-agent"
-# capabilities      = "CAPABILITY_IAM"
-# confirm_changeset = false
-# fail_on_empty_changeset = false
-# parameter_overrides = "AgentRegion=frankfurt Environment=production"
-
 # ── North America / Virginia (us-east-1) — Planned ───────────────────────
 # [virginia]
 # [virginia.deploy.parameters]
@@ -67,3 +56,19 @@ image_repositories = []
 
 [sydney.global.parameters]
 region = "ap-southeast-2"
+
+# ── Europe / Frankfurt (eu-central-1) ─────────────────────────────────────
+[frankfurt]
+[frankfurt.deploy.parameters]
+stack_name        = "uptime-agent-frankfurt"
+region            = "eu-central-1"
+s3_prefix         = "uptime-agent-frankfurt"
+capabilities      = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+parameter_overrides = "AgentRegion=\"frankfurt\" Environment=\"production\""
+resolve_s3 = true
+image_repositories = []
+
+[frankfurt.global.parameters]
+region = "eu-central-1"

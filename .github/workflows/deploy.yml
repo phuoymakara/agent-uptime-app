@@ -10,7 +10,7 @@ on:
         required: false
         default: all
         type: choice
-        options: [all, singapore, sydney]
+        options: [all, singapore, sydney, frankfurt]
       environment:
         description: Target environment
         required: false
@@ -162,10 +162,67 @@ jobs:
           echo "Testing ${{ steps.endpoint.outputs.url }}/health"
           curl -sf "${{ steps.endpoint.outputs.url }}/health" | jq .
 
+  # ── Deploy — Frankfurt (eu-central-1) ───────────────────────────────────
+  deploy-frankfurt:
+    name: Deploy → Frankfurt
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'frankfurt')
+    environment:
+      name: frankfurt
+      url: ${{ steps.endpoint.outputs.url }}
+    permissions:
+      id-token: write   # required for OIDC token request
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-dist
+          path: dist/
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Deploy to Frankfurt
+        run: |
+          sam deploy \
+            --config-env frankfurt \
+            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
+
+      - name: Get endpoint URL
+        id: endpoint
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name uptime-agent-frankfurt \
+            --region eu-central-1 \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+            --output text)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Smoke test
+        run: |
+          echo "Testing ${{ steps.endpoint.outputs.url }}/health"
+          curl -sf "${{ steps.endpoint.outputs.url }}/health" | jq .
+
   # ── Notify ─────────────────────────────────────────────────────────────
   notify:
     name: Deployment summary
-    needs: [deploy-singapore, deploy-sydney]
+    needs: [deploy-singapore, deploy-sydney, deploy-frankfurt]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -173,9 +230,11 @@ jobs:
         run: |
           SG="${{ needs.deploy-singapore.result }}"
           AU="${{ needs.deploy-sydney.result }}"
+          DE="${{ needs.deploy-frankfurt.result }}"
           echo "Singapore: $SG"
           echo "Sydney:    $AU"
-          if [[ "$SG" == "failure" || "$AU" == "failure" ]]; then
+          echo "Frankfurt: $DE"
+          if [[ "$SG" == "failure" || "$AU" == "failure" || "$DE" == "failure" ]]; then
             echo "One or more regions failed — review the logs above."
             exit 1
           fi

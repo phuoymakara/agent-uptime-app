@@ -268,15 +268,18 @@ Expected — `sam deploy --no-fail-on-empty-changeset` skips gracefully when not
 
 > No code changes required. The same Lambda bundle deploys to any AWS region.  
 > Only 3 files need updating — all by copy-paste.
+>
+> Frankfurt (`eu-central-1`) is live as of this writing — use its blocks in
+> `samconfig.toml` / `deploy.yml` / `deploy.sh` as the template for the next region.
 
 **The only values that change per region:**
 
-| What | Example (Frankfurt) |
+| What | Example (Virginia) |
 |------|-------------------|
-| AWS region code | `eu-central-1` |
-| Config env name | `frankfurt` |
-| Stack name | `uptime-agent-frankfurt` |
-| Display name | `Frankfurt` |
+| AWS region code | `us-east-1` |
+| Config env name | `virginia` |
+| Stack name | `uptime-agent-virginia` |
+| Display name | `Virginia` |
 
 ---
 
@@ -299,7 +302,7 @@ image_repositories      = []
 region = "eu-central-1"
 ```
 
-> Frankfurt and Virginia blocks are already in `samconfig.toml` as comments — just uncomment them.
+> A Virginia block is already in `samconfig.toml` as a comment — just uncomment it.
 
 ---
 
