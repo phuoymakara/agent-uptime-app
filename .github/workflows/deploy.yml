@@ -86,7 +86,7 @@ jobs:
         run: |
           sam deploy \
             --config-env singapore \
-            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --parameter-overrides "AgentRegion=singapore Environment=production AgentTokens=${{ secrets.AGENT_TOKENS }}" \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
 
@@ -143,7 +143,7 @@ jobs:
         run: |
           sam deploy \
             --config-env sydney \
-            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --parameter-overrides "AgentRegion=sydney Environment=production AgentTokens=${{ secrets.AGENT_TOKENS }}" \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
 
@@ -200,7 +200,7 @@ jobs:
         run: |
           sam deploy \
             --config-env frankfurt \
-            --parameter-overrides "AgentTokens=${{ secrets.AGENT_TOKENS }}" \
+            --parameter-overrides "AgentRegion=frankfurt Environment=production AgentTokens=${{ secrets.AGENT_TOKENS }}" \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
 

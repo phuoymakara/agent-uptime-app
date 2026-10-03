@@ -38,7 +38,7 @@ deploy_region() {
   echo "==> Deploying to $display ($aws_region)..."
   sam deploy \
     --config-env "$env_name" \
-    --parameter-overrides "AgentTokens=$TOKENS" \
+    --parameter-overrides "AgentRegion=$env_name Environment=production AgentTokens=$TOKENS" \
     --no-confirm-changeset \
     --no-fail-on-empty-changeset \
     --region "$aws_region"
